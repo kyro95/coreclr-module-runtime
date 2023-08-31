@@ -1,7 +1,7 @@
 name: Build client and server
 
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   fetch-nethost-linux:
