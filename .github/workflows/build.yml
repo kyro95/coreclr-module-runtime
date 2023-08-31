@@ -153,16 +153,3 @@ jobs:
         with:
           name: client-windows
           path: ./${{ steps.create_archive.outputs.art_name }}.tar
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: [build-server, build-client]
-    if: ${{ always() }}
-    steps:
-      - uses: geekyeggo/delete-artifact@v2
-        with:
-          name: |
-            nethost-linux
-            nethost-windows
-            csharp-module-linux
-            csharp-module-windows
-            client-windows
