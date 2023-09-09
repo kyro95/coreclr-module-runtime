@@ -1,6 +1,9 @@
 #include "entity.h"
 
 #include "../mvalue.h"
+#include "../utils/macros.h"
+
+CAPI_START()
 
 uint16_t Entity_GetID(alt::IEntity* entity) {
     return entity->GetID();
@@ -124,6 +127,18 @@ uint32_t Entity_GetTimestamp(alt::IEntity* entity)
 {
     return entity->GetTimestamp();
 }
+
+void Entity_SetMultipleStreamSyncedMetaData(alt::IEntity* entity, const char* keys[], alt::MValueConst* values[],
+    uint64_t size)
+{
+    std::unordered_map<std::string, alt::MValue> data = {};
+
+    for (uint64_t i = 0; i < size; i++) {
+        data[keys[i]] = values[i]->get()->Clone();
+    }
+
+    entity->SetMultipleStreamSyncedMetaData(data);
+}
 #endif
 
 #ifdef ALT_CLIENT_API
@@ -131,3 +146,5 @@ uint32_t Entity_GetScriptID(alt::IEntity* entity) {
     return entity->GetScriptID();
 }
 #endif
+
+CAPI_END()
