@@ -38,6 +38,11 @@ void FreeUInt8Array(uint8_t uInt8Array[]) {
     delete[] uInt8Array;
 }
 
+void FreeVector2Array(vector2_t* vector2Array)
+{
+    delete[] vector2Array;
+}
+
 void FreeVoidPointerArray(void* voidPointerArray[]) {
     delete[] voidPointerArray;
 }
@@ -79,9 +84,29 @@ void FreePedArray(alt::IPed** pedArray)
     delete[] pedArray;
 }
 
-void FreeCheckpointArray(alt::ICheckpoint** checkpointArray)
+void FreeNetworkObjectArray(alt::IObject** networkObjectArray)
 {
-    delete[] checkpointArray;
+    delete[] networkObjectArray;
+}
+
+void FreeColShapeArray(alt::IColShape** colShapeArray)
+{
+    delete[] colShapeArray;
+}
+
+void FreeMarkerArray(alt::IMarker** markerArray)
+{
+    delete[] markerArray;
+}
+
+void FreeTextLabelArray(alt::ITextLabel** textLabelArray)
+{
+    delete[] textLabelArray;
+}
+
+void FreeCheckpointArray(alt::ICheckpoint** checkPointArray)
+{
+    delete[] checkPointArray;
 }
 
 void FreeVirtualEntityArray(alt::IVirtualEntity** virtualEntityArray)
@@ -144,6 +169,16 @@ const char* GetSDKVersion(int32_t &size) {
 #ifdef ALT_CLIENT_API
 void FreeRmlElementArray(alt::IRmlElement** rmlElementArray) {
     delete[] rmlElementArray;
+}
+
+void FreeLocalVehicleArray(alt::ILocalVehicle** localVehicleArray)
+{
+    delete[] localVehicleArray;
+}
+
+void FreeLocalPedArray(alt::ILocalPed** localPedArray)
+{
+    delete[] localPedArray;
 }
 
 void* Win_GetTaskDialog() {
