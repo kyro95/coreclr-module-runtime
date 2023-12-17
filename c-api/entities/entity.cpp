@@ -140,6 +140,16 @@ void Entity_SetMultipleStreamSyncedMetaData(alt::IEntity* entity, const char* ke
 
     entity->SetMultipleStreamSyncedMetaData(data);
 }
+
+uint32_t Entity_GetStreamingDistance(alt::IEntity* entity)
+{
+    return entity->GetStreamingDistance();
+}
+
+void Entity_SetStreamingDistance(alt::IEntity* entity, uint32_t streamingDistance)
+{
+    entity->SetStreamingDistance(streamingDistance);
+}
 #endif
 
 #ifdef ALT_CLIENT_API

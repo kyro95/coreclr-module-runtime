@@ -286,13 +286,17 @@ void Core_ToggleEvent(alt::ICore* core, uint8_t event, uint8_t state) {
     return core->ToggleEvent((alt::CEvent::Type) event, state);
 }
 
-uint8_t Core_GetEventEnumSize() {
-    return (uint8_t) alt::CEvent::Type::SIZE;
+uint8_t Core_GetEventTypeSize() {
+    return static_cast<uint8_t>(alt::CEvent::Type::SIZE);
+}
+
+uint8_t Core_GetBaseObjectTypeSize() {
+    return static_cast<uint8_t>(alt::IBaseObject::Type::SIZE);
 }
 
 uint8_t Core_GetVoiceConnectionState(alt::ICore* core)
 {
-    return (uint8_t) core->GetVoiceConnectionState();
+    return static_cast<uint8_t>(core->GetVoiceConnectionState());
 }
 
 alt::IObject** Core_GetNetworkObjects(alt::ICore* core, uint64_t& size)
@@ -468,6 +472,10 @@ alt::IColShape* Core_CreateColShapePolygon(alt::ICore* core, float minZ, float m
     return colShape;
 }
 
+int32_t Core_GetNetTime(alt::ICore* core) {
+    return core->GetNetTime();
+}
+
 #ifdef ALT_SERVER_API
 uint8_t Core_SubscribeCommand(alt::ICore* core, const char* cmd, alt::CommandCallback cb) {
     return core->SubscribeCommand(cmd, cb);
@@ -545,7 +553,7 @@ void Core_TriggerClientEventUnreliableForAll(alt::ICore* core, const char* ev, a
     core->TriggerClientEventUnreliableForAll(ev, mValues);
 }
 
-alt::IVehicle* Core_CreateVehicle(alt::ICore* core, uint32_t model, position_t pos, rotation_t rot, uint32_t &id) {
+alt::IVehicle* Core_CreateVehicle(alt::ICore* core, uint32_t model, position_t pos, rotation_t rot, uint32_t streamingDistance, uint32_t &id) {
     alt::Position position;
     position.x = pos.x;
     position.y = pos.y;
@@ -554,14 +562,14 @@ alt::IVehicle* Core_CreateVehicle(alt::ICore* core, uint32_t model, position_t p
     rotation.roll = rot.roll;
     rotation.pitch = rot.pitch;
     rotation.yaw = rot.yaw;
-    auto vehicle = core->CreateVehicle(model, position, rotation);
+    auto vehicle = core->CreateVehicle(model, position, rotation, streamingDistance);
     if (vehicle != nullptr) {
         id = vehicle->GetID();
     }
     return vehicle;
 }
 
-alt::IPed* Core_CreatePed(alt::ICore* core, uint32_t model, position_t pos, rotation_t rot, uint32_t &id)
+alt::IPed* Core_CreatePed(alt::ICore* core, uint32_t model, position_t pos, rotation_t rot, uint32_t streamingDistance, uint32_t &id)
 {
     alt::Position position;
     position.x = pos.x;
@@ -573,7 +581,7 @@ alt::IPed* Core_CreatePed(alt::ICore* core, uint32_t model, position_t pos, rota
     rotation.pitch = rot.pitch;
     rotation.yaw = rot.yaw;
 
-    auto ped = core->CreatePed(model, position, rotation);
+    auto ped = core->CreatePed(model, position, rotation, streamingDistance);
     if (ped != nullptr) {
         id = ped->GetID();
     }
@@ -636,6 +644,16 @@ ClrVehicleModelInfo* Core_GetVehicleModelInfo(alt::ICore* core, uint32_t hash) {
     return new ClrVehicleModelInfo(core->GetVehicleModelByHash(hash));
 }
 
+void Core_GetLoadedVehicleModels(alt::ICore* core, uint32_t*& loadedVehicleModelsOut, uint64_t& size) {
+    auto loadedVehicleModels = core->GetLoadedVehicleModels();
+    size = loadedVehicleModels.size();
+    auto valuesArr = new uint32_t[size];
+    for (auto i = 0; i < size; i++) {
+        valuesArr[i] = loadedVehicleModels[i];
+    }
+    loadedVehicleModelsOut = valuesArr;
+}
+
 ClrPedModelInfo* Core_GetPedModelInfo(alt::ICore* core, uint32_t hash) {
     return new ClrPedModelInfo(core->GetPedModelByHash(hash));
 }
@@ -683,10 +701,6 @@ void Core_DestroyVoiceChannel(alt::ICore* core, alt::IVoiceChannel* baseObject) 
 
 void Core_DestroyColShape(alt::ICore* core, alt::IColShape* baseObject) {
     return core->DestroyBaseObject(baseObject);
-}
-
-int32_t Core_GetNetTime(alt::ICore* core) {
-    return core->GetNetTime();
 }
 
 const char* Core_GetRootDirectory(alt::ICore* core, int32_t& size) {
@@ -822,7 +836,7 @@ alt::IMarker* Core_CreateMarker(alt::ICore* core, alt::IPlayer* target, uint8_t 
 }
 
 alt::IObject* Core_CreateObject(alt::ICore* core, uint32_t model, position_t position, rotation_t rotation,
-    uint8_t alpha, uint8_t textureVariation, uint16_t lodDistance, uint32_t& id)
+    uint8_t alpha, uint8_t textureVariation, uint16_t lodDistance, uint32_t streamingDistance, uint32_t& id)
 {
     alt::Position pos;
     pos.x = position.x;
@@ -834,7 +848,7 @@ alt::IObject* Core_CreateObject(alt::ICore* core, uint32_t model, position_t pos
     rot.pitch = rotation.pitch;
     rot.yaw = rotation.yaw;
 
-    auto networkObject = core->CreateObject(model, pos, rot, alpha, textureVariation, lodDistance);
+    auto networkObject = core->CreateObject(model, pos, rot, alpha, textureVariation, lodDistance, streamingDistance);
     if (networkObject != nullptr) {
         id = networkObject->GetID();
     }
@@ -1000,6 +1014,24 @@ void Core_SetMigrationDistance(alt::ICore* core, uint32_t limit)
 {
     core->SetMigrationDistance(limit);
 }
+
+void Core_TriggerClientRPCAnswer(alt::ICore* core, alt::IPlayer* target, uint16_t answerID, alt::MValueConst* answer, const char* error)
+{
+    if(answer == nullptr) return;
+    core->TriggerClientRPCAnswer(target, answerID, answer->get()->Clone(), error);
+}
+
+uint16_t Core_TriggerClientRPCEvent(alt::ICore* core, alt::IPlayer* target, const char* ev, alt::MValueConst* args[],
+    int size)
+{
+    alt::MValueArgs mValues = alt::MValueArgs(size);
+    for (int i = 0; i < size; i++) {
+        ToMValueArg(mValues, core, args[i], i);
+    }
+    return core->TriggerClientRPCEvent(target, ev, mValues);
+}
+
+
 #endif
 
 #ifdef ALT_CLIENT_API
@@ -1611,8 +1643,8 @@ alt::IWebSocketClient* Core_CreateWebsocketClient(alt::ICore* core, alt::IResour
     return webSocketClient;
 }
 
-alt::IAudio* Core_CreateAudio(alt::ICore* core, const char* source, float volume, uint8_t isRadio, const char* basePath, alt::IResource* resource, uint32_t &id) {
-    auto audio = core->CreateAudio(source, volume, isRadio, basePath, resource);
+alt::IAudio* Core_CreateAudio(alt::ICore* core, const char* source, float volume, uint8_t isRadio, uint8_t clearCache, const char* basePath, alt::IResource* resource, uint32_t &id) {
+    auto audio = core->CreateAudio(source, volume, isRadio, clearCache, basePath, resource);
     if (audio != nullptr) {
         id = audio->GetID();
     }
@@ -1997,6 +2029,21 @@ void Core_GetAllWeaponData(alt::ICore* core, uint32_t weaponHashes[], uint64_t s
     for (uint64_t i = 0; i < size; i++) {
         weaponHashes[i] = weaponData[i]->GetNameHash();
     }
+}
+
+void Core_TriggerServerRPCAnswer(alt::ICore* core, uint16_t answerID, alt::MValueConst* answer, const char* error)
+{
+    if(answer == nullptr) return;
+    core->TriggerServerRPCAnswer(answerID, answer->get()->Clone(), error);
+}
+
+uint16_t Core_TriggerServerRPCEvent(alt::ICore* core, const char* ev, alt::MValueConst* args[], int size)
+{
+    alt::MValueArgs mValues = alt::MValueArgs(size);
+    for (int i = 0; i < size; i++) {
+        ToMValueArg(mValues, core, args[i], i);
+    }
+    return core->TriggerServerRPCEvent(ev, mValues);
 }
 #endif
 
